@@ -28,7 +28,9 @@ bool requestConnect = false;
 bool requestScan = false;
 bool hasSaved = false;
 bool apActive = false;
+#if WIFI_MDNS_ENABLE
 bool mdnsStarted = false;
+#endif
 uint32_t connectRequestedAt = 0;
 String result = "";
 
@@ -136,9 +138,11 @@ void wifiSetupLoop() {
                 state = apActive ? State::Grace : State::Connected;
             }
             stateSince = millis();
+#if WIFI_MDNS_ENABLE
             if (mdnsStarted) MDNS.close();
             mdnsStarted = MDNS.begin(WIFI_HOSTNAME);
             if (mdnsStarted) MDNS.addService("http", "tcp", HTTP_LISTEN_PORT);
+#endif
         } else if (millis() - stateSince >= CONNECT_TIMEOUT) {
             WiFi.disconnect();
             candidatePending = false;
@@ -154,7 +158,9 @@ void wifiSetupLoop() {
         if (hasSaved) connect(saved, apActive);
         else startAp();
     }
+#if WIFI_MDNS_ENABLE
     if (mdnsStarted) MDNS.update();
+#endif
 }
 
 void wifiSetupRoutes(AsyncWebServer *server) {

@@ -1,0 +1,284 @@
+INSTRUKCJA BUDOWANIA, WGRYWANIA I SPRAWDZANIA WI-FI UART (ESP8266)
+=================================================================
+
+1. Zakres
+---------
+Instrukcja dotyczy projektu na galezi 512kB i srodowiska Linux x86_64.
+Wszystkie ponizsze polecenia, poza wyraznie wskazanymi wyjatkami,
+wykonuj w katalogu glownym repozytorium wi-se-sw.
+
+Dostepne sa dwa profile:
+  esp01s-512 - ESP-01 / ESP-01S z 512 kB flash, bez mDNS i OTA;
+  esp01s     - ESP-01S z 1 MB flash, z mDNS, bez OTA.
+
+Oba profile udostepniaja terminal i konfiguracje Wi-Fi w trybach AP i STA.
+Najpierw ustal faktyczna pojemnosc flash swojego egzemplarza. Plik dla 1 MB
+nie jest przeznaczony dla modulu 512 kB. Wariant 512 kB ma malo wolnego miejsca.
+
+W sprawdzonym srodowisku uzyto Pythona 3.12, PlatformIO Core 6.2.0 oraz
+Arduino ESP8266 3.1.2. Pierwsza kompilacja wymaga dostepu do internetu.
+Projekt nie przypina wszystkich wersji bibliotek i platformy PlatformIO,
+wiec przyszla instalacja moze pobrac inne wersje. Rozmiar firmware i wynik
+kompilacji moga wowczas sie roznic.
+
+Zmiany na lokalnej galezi moga jeszcze nie byc zatwierdzone ani wyslane do
+zdalnego repozytorium. Przed przeniesieniem projektu na inny komputer sprawdz,
+czy cala zawartosc galezi i potrzebne zmiany sa tam dostepne:
+
+  git status --short --branch
+
+2. Wymagania
+------------
+- Git, Python 3 oraz modul venv; na Debianie/Ubuntu moze byc potrzebny
+  systemowy pakiet python3-venv.
+- Dostep do internetu podczas instalacji i pierwszej kompilacji.
+- Adapter USB-UART pracujacy z sygnalami 3,3 V i ESP-01(S).
+- Stabilne zasilanie 3,3 V odpowiednie do chwilowego poboru pradu przez ESP.
+- Komputer lub telefon z przegladarka i Wi-Fi 2,4 GHz.
+
+PlatformIO Core i pakiety Pythona zostana zainstalowane lokalnie w .venv.
+Platforma ESP8266, kompilator i biblioteki PlatformIO beda pobrane do
+.venv/.platformio, o ile ustawisz zmienne opisane ponizej. Pliki posrednie
+kompilacji i binarki powstaja w .builder/ w katalogu projektu.
+
+Node.js i Yarn nie sa potrzebne do zwyklej kompilacji: wygenerowana strona
+terminala jest juz zapisana w include/html.h. Sa potrzebne dopiero przy
+modyfikacji i ponownym budowaniu zrodel strony z katalogu html/.
+
+3. Przygotowanie srodowiska Python
+---------------------------------
+W katalogu repozytorium wykonaj:
+
+  python3 -m venv .venv
+  source .venv/bin/activate
+  python -m pip install --no-cache-dir platformio -r requirements.txt
+
+Ustaw polozenie pakietow PlatformIO wewnatrz tego samego srodowiska:
+
+  export PLATFORMIO_CORE_DIR="$VIRTUAL_ENV/.platformio"
+  export PLATFORMIO_LIBDEPS_DIR="$VIRTUAL_ENV/.platformio/libdeps"
+  export PLATFORMIO_SETTING_ENABLE_TELEMETRY=no
+
+Sprawdz, czy narzedzia sa dostepne:
+
+  python --version
+  platformio --version
+
+Po otwarciu NOWEGO okna terminala ponownie uruchom:
+
+  source .venv/bin/activate
+  export PLATFORMIO_CORE_DIR="$VIRTUAL_ENV/.platformio"
+  export PLATFORMIO_LIBDEPS_DIR="$VIRTUAL_ENV/.platformio/libdeps"
+  export PLATFORMIO_SETTING_ENABLE_TELEMETRY=no
+
+Aby zakonczyc prace w srodowisku, wykonaj polecenie deactivate.
+
+W razie bledu DNS lub braku dostepu do GitHub / rejestru PlatformIO sprawdz
+polaczenie internetowe. Pobranie kompilatora i bibliotek moze potrwac kilka
+minut. Nie trzeba instalowac ich recznie ani globalnie.
+
+4. Utworzenie konfiguracji
+--------------------------
+Wybierz odpowiedni profil. Polecenia cp -n nie nadpisuja istniejacych plikow.
+
+Dla ukladu 512 kB:
+
+  cp -n configs/esp01s-512.yml.example configs/esp01s-512.yml
+
+Dla ukladu 1 MB:
+
+  cp -n configs/esp01s.yml.example configs/esp01s.yml
+
+Pliki .yml sa lokalna konfiguracja i sa ignorowane przez Git. Przy pierwszej
+kompilacji wystarczy ustawienie przykladowego portu; do wgrywania trzeba wpisac
+wlasciwy port adaptera w wybranym pliku. Przyklad:
+
+  upload:
+    method: serial
+    serial:
+      port: /dev/ttyUSB0
+      baud: 460800
+
+Jesli adapter jest widoczny jako /dev/ttyACM0, wpisz te nazwe. Aktualne porty
+mozna wyswietlic poleceniem:
+
+  python -m serial.tools.list_ports -v
+
+Domyslny UART w konfiguracji firmware: 115200 bodow, 8 bitow danych, brak
+parzystosci, 1 bit stopu (8N1). Predkosc w sekcji upload.serial.baud dotyczy
+programowania i nie musi byc taka sama jak predkosc terminala UART.
+
+5. Budowanie pliku binarnego
+-----------------------------
+Upewnij sie, ze .venv jest aktywne i ustawiono zmienne z punktu 3.
+
+Dla 512 kB:
+
+  python builder.py build esp01s-512
+
+Wynik:
+
+  .builder/esp01s-512/.pio/build/wi_se/firmware.bin
+
+Dla 1 MB:
+
+  python builder.py build esp01s
+
+Wynik:
+
+  .builder/esp01s/.pio/build/wi_se/firmware.bin
+
+Podczas przygotowania tej instrukcji kompilacje powiodly sie dla obu profili.
+Dla 512 kB PlatformIO pokazalo 492413 z 499696 bajtow obszaru programu
+(98,5%) oraz 31732 z 81920 bajtow statycznego RAM. To tylko wynik kompilacji,
+nie wynik testow na urzadzeniu. Rozmiar moze sie zmienic wraz z kodem lub
+bibliotekami. Wazny jest komunikat SUCCESS i brak FAILED w koncowym raporcie.
+Uwaga: obecny builder.py potrafi zakonczyc sie kodem 0 mimo nieudanej budowy,
+wiec nie opieraj oceny wylacznie na kodzie wyjscia powloki.
+
+6. Jak sprawdzic rozmiar flash podlaczonego modulu
+--------------------------------------------------
+Najpierw wykonaj przynajmniej jedna kompilacje: pobierze ona pakiet
+esptool do katalogu PlatformIO. Podlacz uklad jak w punkcie 7 i wlacz tryb
+programowania. Przyklad dla portu /dev/ttyUSB0:
+
+  python "$PLATFORMIO_CORE_DIR/packages/tool-esptoolpy/esptool.py" --chip esp8266 --port /dev/ttyUSB0 flash_id
+
+Odczytaj wartosc Detected flash size. Jesli wynik jest nieznany lub wyglada
+niewiarygodnie, sprawdz zasilanie, polaczenia i oznaczenie kosci flash; nie
+wybieraj profilu 1 MB w ciemno. Program moze sam resetowac uklad przy uzyciu
+linii sterujacych adaptera. W razie braku automatycznego resetu zastosuj
+reczna procedure z punktu 7.
+
+7. Podlaczenie i wgrywanie
+--------------------------
+UWAGA: ESP-01(S) pracuje z zasilaniem i poziomami logicznymi 3,3 V.
+Nie podlaczaj do jego pinow sygnalow 5 V. Sprawdz opis swojego adaptera;
+nie kazdy adapter ustawiony na logike 3,3 V potrafi zasilic ESP stabilnie.
+
+Typowe polaczenia do adaptera UART:
+
+  ESP VCC          -> stabilne 3,3 V
+  ESP GND          -> GND adaptera i zasilania
+  ESP TX (GPIO1)   -> RX adaptera
+  ESP RX (GPIO3)   -> TX adaptera, poziom 3,3 V
+  ESP EN / CH_PD   -> stan wysoki 3,3 V zgodnie z ukladem plytki
+
+Wiele adapterow do ESP-01(S) ma przelacznik programowanie/praca oraz zapewnia
+wymagane podciaganie pinow. Przy podlaczeniu recznym nalezy tez zachowac
+wymagane stany pinow startowych: GPIO2 powinno byc podciagniete do 3,3 V,
+a RST pozostawiony w stanie wysokim poza momentem resetu. Sprawdz istniejace
+rezystory na swojej plytce. Dla trybu programowania GPIO0 musi byc
+w stanie niskim podczas wlaczenia zasilania lub resetu. Po wejsciu w tryb
+programowania pozostaw polaczenie do czasu wgrania. Aby uruchomic firmware,
+zwolnij GPIO0 do stanu wysokiego (np. przez poprawne podciagniecie) i zresetuj
+ESP. Nie zwieraj pinu 3,3 V bezposrednio do GND.
+
+Wgrywanie za pomoca konfiguracji projektu (polecenie ponownie kompiluje kod):
+
+  python builder.py upload esp01s-512
+
+albo dla modulu 1 MB:
+
+  python builder.py upload esp01s
+
+Sprawdz komunikat SUCCESS. Po wgraniu ustaw adapter w tryb pracy i zresetuj
+modul. Nie wykonuj pelnego kasowania flash bez potrzeby: oprocz firmware moze
+ono usunac zapisane dane, w tym konfiguracje sieci.
+
+Jesli pojawia sie Permission denied dla portu, sprawdz uprawnienia do
+/dev/ttyUSB0 lub /dev/ttyACM0 i odpowiednia grupe systemowa (czesto dialout).
+Po zmianie czlonkostwa grupy moze byc konieczne ponowne zalogowanie. Zamknij
+tez wszystkie programy, ktore uzywaja portu. Przy problemach z polaczeniem
+sprawdz GPIO0, reset, TX/RX i zasilanie; mozna zmniejszyc upload.serial.baud
+w pliku konfiguracji, np. do 115200.
+
+8. Sprawdzenie punktu AP i strony
+---------------------------------
+Ponizsza procedura opisuje oczekiwane dzialanie; dotychczas firmware zostal
+skompilowany, ale nie byl sprawdzony na rzeczywistym egzemplarzu ESP-01(S).
+
+1) Po pierwszym uruchomieniu bez zapisanej sieci wyszukaj Wi-Fi o nazwie
+   WiFi-UART. Siec jest otwarta i nie wymaga hasla.
+2) Polacz sie z nia. Jesli telefon ostrzega o braku internetu, pozostan w tej
+   sieci i w razie potrzeby wylacz automatyczne przelaczanie na inna siec.
+3) Otworz w przegladarce adres:
+
+     http://192.168.200.200/
+
+   Powinien otworzyc sie terminal. Wejdz w odnosnik Wi-Fi lub bezposrednio:
+
+     http://192.168.200.200/wifi
+
+4) Wybierz Skanuj sieci. Powinna pojawic sie lista dostepnych sieci 2,4 GHz.
+
+Otwarty AP oznacza, ze osoba w zasiegu moze korzystac z terminala i strony.
+Haslo sieci STA jest przesylane przez HTTP bez szyfrowania. Uzywaj w zaufanym
+miejscu. Konfiguracja sieci jest zapisywana we flash bez szyfrowania.
+
+9. Sprawdzenie STA i powrotu do AP
+----------------------------------
+1) Bedac w panelu Wi-Fi, wybierz wlasna siec 2,4 GHz, wpisz haslo i kliknij
+   Zapisz i polacz. Mozna tez wpisac nazwe sieci recznie.
+2) Jesli polaczenie sie uda, strona powinna pokazac adres STA przydzielony
+   przez router. Zapisz go. AP pozostaje aktywny przez okolo 30 sekund po
+   polaczeniu, po czym zostaje wylaczony.
+3) Polacz komputer lub telefon z docelowa siecia i otworz w przegladarce:
+
+     http://ADRES_STA/
+
+   Zastap ADRES_STA rzeczywistym adresem z panelu lub listy klientow routera.
+   Na profilu 1 MB moze tez dzialac http://wi-se.local/, jesli siec i system
+   obsluguja mDNS. W profilu 512 kB mDNS jest wylaczony.
+4) Zresetuj ESP i sprawdz, czy po restarcie laczy sie ponownie z zapisana
+   siecia. Po restarcie adres DHCP moze sie zmienic.
+5) Aby sprawdzic awaryjny AP, tymczasowo wylacz lub oddal wlasna siec Wi-Fi.
+   Po utracie sieci i okolo 30 sekundach nieudanej proby polaczenia powinien
+   pojawic sie AP WiFi-UART. Odwroc zmiane w routerze po sprawdzeniu.
+
+Przelaczenie kanalu podczas laczenia moze chwilowo rozlaczyc przegladarke z
+AP. Jesli nie widzisz wyniku, polacz sie z AP ponownie albo odczytaj adres w
+routerze. Nieudana proba nowej konfiguracji powinna pozostawic poprzednio
+zapisana siec; ponowny restart sprobuje jej uzyc.
+
+10. Sprawdzenie terminala UART
+------------------------------
+Najpierw odlacz ESP od programatora i urzadzenia docelowego. Do wstepnego testu
+petli zwrotnej polacz TX ESP bezposrednio z RX ESP; nie podlaczaj w tym samym
+czasie innego nadajnika do tych linii. Zasilaj ESP poprawnie napieciem 3,3 V.
+Nastepnie:
+
+1) Otworz terminal WWW przez AP lub adres STA.
+2) Wpisz kilka znakow. Powinny wrocic do terminala przez petle TX -> RX.
+3) Usun petle zwrotna po tescie.
+
+Wyswietlenie znakow zalezy od ustawienia lokalnego echa terminala; jesli tekst
+pojawia sie nawet po odlaczeniu petli, nie jest to dowod dzialania UART. Mozna
+tez sprawdzic komunikacje z prawdziwym urzadzeniem UART 3,3 V, laczac TX z RX,
+RX z TX oraz masy i ustawiajac takie samo baudrate i format po obu stronach.
+Przed podlaczeniem upewnij sie, ze urzadzenie docelowe toleruje poziom 3,3 V.
+Log startowy ESP moze pojawic sie na TX. Przy duzej predkosci i dlugim
+strumieniu moga wystapic straty, jesli druga strona nie obsluguje kontroli
+przeplywu. W ustawieniach WWW mozna zmienic biezace parametry UART.
+
+11. Opcjonalnie: przebudowanie strony WWW
+-----------------------------------------
+Te kroki sa potrzebne tylko po zmianach w html/src. Wymagaja Node.js i Yarn;
+nie sa potrzebne do samego zbudowania firmware z dolaczonego include/html.h.
+Repozytorium zawiera plik blokady dla Yarn 1. Komendy uruchom w katalogu html/:
+
+  cd html
+  yarn install --frozen-lockfile
+  yarn run build
+  cd ..
+
+W profilu 512 kB zalecana jest ponowna bezstratna optymalizacja gzip, poniewaz
+miejsce w flash jest ograniczone. Nadal przy aktywnym .venv wykonaj:
+
+  python -m pip install --no-cache-dir -r html/requirements.txt
+  python html/optimize_header.py
+  python builder.py build esp01s-512
+
+Skrypt weryfikuje, ze po rozpakowaniu zawartosc strony nie ulegla zmianie.
+Po zmianach strony, bibliotek lub wersji narzedzi zawsze ponownie sprawdz
+komunikat o zajetosci flash i wynik budowania.

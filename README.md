@@ -416,10 +416,12 @@ See `fakeesp/README.md` for licensing info for the ESP SDK and libraries mocks.
 
 ## ESP-01S Wi-Fi setup
 
-The `esp01s` profile uses a 1 MB flash layout. Verify the actual flash size before
-flashing; 512 kB modules are not supported by this profile. Copy
-`configs/esp01s.yml.example` to `configs/esp01s.yml` and set the serial port.
-Activate the project's Python virtual environment before using `builder.py`.
+The `esp01s` profile uses a 1 MB flash layout. The `esp01s-512` profile uses a
+512 kB layout and builds with size optimization. Verify the actual flash size
+before flashing. Copy the corresponding example configuration, either
+`configs/esp01s.yml.example` or `configs/esp01s-512.yml.example`, to a `.yml`
+file without the `.example` suffix and set the serial port. Activate the
+project's Python virtual environment before using `builder.py`.
 
 With no saved network, or after a 30-second connection timeout, the device starts
 an open access point named `WiFi-UART` at `http://192.168.200.200/`. The terminal
@@ -432,7 +434,9 @@ The AP stays available for 30 seconds after a successful connection so that the
 page can display the new DHCP address. A channel change may disconnect the
 browser from the AP during the attempt. If necessary reconnect to `WiFi-UART`,
 or find the device address in the router's client list. In the target network,
-`http://wi-se.local/` may also work if mDNS is supported. Wi-Fi configuration
+`http://wi-se.local/` may also work for the 1 MB profile if mDNS is supported.
+The 512 kB profile disables mDNS to save flash; use the displayed DHCP address
+or the router's client list. Wi-Fi configuration
 is available in both AP and STA modes. A failed attempt keeps the previously
 saved credentials; restart the device to retry them.
 
@@ -442,3 +446,9 @@ location. The ESP-01S profile disables the four-board-LED handling and OTA;
 UART0 uses the exposed RX/TX pins. ESP boot output may appear on UART TX.
 The terminal remains usable through the AP, although Wi-Fi scanning can disrupt
 traffic. Resetting or reflashing may interrupt active UART and WebSocket traffic.
+The 512 kB profile has no filesystem partition and leaves little room for future
+firmware growth. Its EEPROM sector for saved Wi-Fi credentials remains available.
+The checked-in terminal HTML is losslessly recompressed to save flash. After
+rebuilding the frontend with Yarn, install `html/requirements.txt` into the
+Python virtual environment and run `python html/optimize_header.py` before
+building the firmware. Without this step the 512 kB profile has less headroom.

@@ -259,7 +259,9 @@ void setup() {
 }
 
 void loop() {
+#if OTA_ENABLE == 1 && BOARD_TYPE != BOARD_ESP01S
     ArduinoOTA.handle();
+#endif
     if (otaRunning) {
         return yield();
     }

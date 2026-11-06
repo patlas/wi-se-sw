@@ -36,7 +36,8 @@ BOARD_TYPES = {
     'wi-se-opi4-v0.1': 2,
     'wi-se-rewirable-v0.1': 3,
     'esp32dev': 4,
-    'esp01s': 5
+    'esp01s': 5,
+    'esp01s-512': 5
 }
 
 
@@ -145,6 +146,10 @@ class ConfigHeaderExtractor(Extractor):
     @property
     def WIFI_HOSTNAME(self):
         return self.jq('.wifi.hostname', 'Wi_Se', c_string=True)
+
+    @property
+    def WIFI_MDNS_ENABLE(self):
+        return int(self.jq('.board.type', 'generic') != 'esp01s-512')
 
     @property
     def DEVICE_PRETTY_NAME(self):
@@ -327,11 +332,13 @@ class ConfigHeaderExtractor(Extractor):
 class PlatformIOExtractor(Extractor):
     @property
     def atomic_ota(self):
-        return self.jq('.ota.atomic', True)
+        return self.jq('.ota.atomic', True) if self.board_type != 'esp01' else False
 
     @property
     def board_type(self):
         board = self.jq('.board.type', 'generic')
+        if board == 'esp01s-512':
+            return 'esp01'
         if board == 'esp01s':
             return 'esp01_1m'
         if board == 'generic':
@@ -346,6 +353,11 @@ class PlatformIOExtractor(Extractor):
 
     @property
     def board_flash_size(self):
+        if self.jq('.board.type', 'generic') == 'esp01s-512':
+            value = str(self.jq('.board.flash_size', '512KB')).lower().replace(' ', '')
+            if value not in ('512', '512kb', '512k'):
+                raise ValueError('esp01s-512 requires 512KB flash')
+            return 0.5
         default_size = 1 if self.jq('.board.type', 'generic') == 'esp01s' else 4
         fsize = str(self.jq('.board.flash_size', default_size))
         size = int(''.join(filter(str.isdigit, fsize)))
@@ -387,6 +399,8 @@ class PlatformIOExtractor(Extractor):
             ldscript = "eagle.flash.2m.ld"
         elif self.board_flash_size == 1:
             ldscript = "eagle.flash.1m64.ld"
+        elif self.board_flash_size == 0.5:
+            ldscript = "eagle.flash.512k.ld"
         return self.jq('.build.ldscript', ldscript)
 
     @property

@@ -1,0 +1,26 @@
+# Copy to configs/esp01s-512.yml and set the serial port before building.
+# This profile uses the complete 512 kB flash; verify the module size first.
+name: WiFi-UART
+board:
+  type: esp01s-512
+  flash_size: 512KB
+  target: []
+upload:
+  method: serial
+  serial:
+    port: /dev/ttyUSB0
+    baud: 460800
+uart:
+  uart_comm:
+    serial: 0
+    baud: 115200
+wifi:
+  hostname: wi-se
+http:
+  port: 80
+  auth:
+    enable: false
+ota:
+  enable: false
+debug:
+  enable: false

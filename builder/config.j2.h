@@ -45,6 +45,7 @@
 #define WIFI_SSID {{ cfg.WIFI_SSID }}
 #define WIFI_PASS {{ cfg.WIFI_PASS }}
 #define WIFI_HOSTNAME {{ cfg.WIFI_HOSTNAME }}
+#define WIFI_MDNS_ENABLE {{ cfg.WIFI_MDNS_ENABLE }}
 
 #define DEVICE_PRETTY_NAME {{ cfg.DEVICE_PRETTY_NAME }}
 

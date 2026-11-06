@@ -16,3 +16,12 @@ Install [Yarn](https://yarnpkg.com), and run: `yarn install`.
 ## Publish
 
 Run `yarn run build`, this will compile the inlined html to `../include/html.h`.
+
+For the 512 kB firmware profile, optimize the generated gzip data afterward:
+
+```sh
+../.venv/bin/python -m pip install -r requirements.txt
+../.venv/bin/python optimize_header.py
+```
+
+The recompression preserves the page and requires no changes to the browser.
