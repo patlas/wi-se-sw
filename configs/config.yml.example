@@ -19,6 +19,7 @@ board:
   # Board type. Available types:
   # - generic                 for generic boards such as an ESP8266 breakout (you need to configure the LEDs)
   # - esp32dev                as above, but for ESP32 mcu
+  # - esp01s                  ESP-01S, 1 MB flash; Wi-Fi configured through the browser
   # - wi-se-rpi-v0.1          Wi-Se Raspi Header v0.1
   # - wi-se-opi4-v0,1         Wi-Se Orange Pi 4 v0,1
   # - wi-se-rewirable-v0.1    Wi-Se Rewirable v0,1

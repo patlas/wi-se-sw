@@ -423,6 +423,7 @@ void TTY::pingClients() {
 }
 
 void TTY::handleLedBlinkRequests() {
+#if BOARD_TYPE != BOARD_ESP01S
     uint64_t now = millis();
     const uint8_t leds[] = {LED_RX, LED_TX};
 
@@ -446,6 +447,7 @@ void TTY::handleLedBlinkRequests() {
     } else {
         digitalWrite(LED_STATUS, LOW);
     }
+#endif
 }
 
 void TTY::performHousekeeping() {

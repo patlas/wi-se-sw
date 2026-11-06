@@ -35,7 +35,8 @@ BOARD_TYPES = {
     'wi-se-rpi-v0.1': 1,
     'wi-se-opi4-v0.1': 2,
     'wi-se-rewirable-v0.1': 3,
-    'esp32dev': 4
+    'esp32dev': 4,
+    'esp01s': 5
 }
 
 
@@ -331,6 +332,8 @@ class PlatformIOExtractor(Extractor):
     @property
     def board_type(self):
         board = self.jq('.board.type', 'generic')
+        if board == 'esp01s':
+            return 'esp01_1m'
         if board == 'generic':
             board = 'esp_wroom_02'
         return board
@@ -343,8 +346,12 @@ class PlatformIOExtractor(Extractor):
 
     @property
     def board_flash_size(self):
-        fsize = str(self.jq('.board.flash_size', 4))
-        return int(''.join(filter(str.isdigit, fsize)))
+        default_size = 1 if self.jq('.board.type', 'generic') == 'esp01s' else 4
+        fsize = str(self.jq('.board.flash_size', default_size))
+        size = int(''.join(filter(str.isdigit, fsize)))
+        if self.jq('.board.type', 'generic') == 'esp01s' and (size != 1 or 'kb' in fsize.lower()):
+            raise ValueError('ESP-01S profile currently requires a verified 1 MB flash')
+        return size
 
     @property
     def platform(self):
@@ -378,6 +385,8 @@ class PlatformIOExtractor(Extractor):
             ldscript = "eagle.flash.4m.ld"
         elif self.board_flash_size >= 2:
             ldscript = "eagle.flash.2m.ld"
+        elif self.board_flash_size == 1:
+            ldscript = "eagle.flash.1m64.ld"
         return self.jq('.build.ldscript', ldscript)
 
     @property

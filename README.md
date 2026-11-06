@@ -413,3 +413,32 @@ All content under `/html` was originally written for
 See the git commit history for the `/html` directory for original authors credits.
 
 See `fakeesp/README.md` for licensing info for the ESP SDK and libraries mocks.
+
+## ESP-01S Wi-Fi setup
+
+The `esp01s` profile uses a 1 MB flash layout. Verify the actual flash size before
+flashing; 512 kB modules are not supported by this profile. Copy
+`configs/esp01s.yml.example` to `configs/esp01s.yml` and set the serial port.
+Activate the project's Python virtual environment before using `builder.py`.
+
+With no saved network, or after a 30-second connection timeout, the device starts
+an open access point named `WiFi-UART` at `http://192.168.200.200/`. The terminal
+and the Wi-Fi settings page are available there. Select **Wi-Fi**, scan, select a
+network or enter its SSID manually, enter its password and connect. Only 2.4 GHz
+networks supported by ESP8266 can be used. The device stores credentials after
+successfully connecting. They are stored unencrypted in flash.
+
+The AP stays available for 30 seconds after a successful connection so that the
+page can display the new DHCP address. A channel change may disconnect the
+browser from the AP during the attempt. If necessary reconnect to `WiFi-UART`,
+or find the device address in the router's client list. In the target network,
+`http://wi-se.local/` may also work if mDNS is supported. Wi-Fi configuration
+is available in both AP and STA modes. A failed attempt keeps the previously
+saved credentials; restart the device to retry them.
+
+The open AP and unencrypted HTTP give nearby clients access to the terminal and
+expose credentials sent to the configuration page. Use only in a trusted
+location. The ESP-01S profile disables the four-board-LED handling and OTA;
+UART0 uses the exposed RX/TX pins. ESP boot output may appear on UART TX.
+The terminal remains usable through the AP, although Wi-Fi scanning can disrupt
+traffic. Resetting or reflashing may interrupt active UART and WebSocket traffic.

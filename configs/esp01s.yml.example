@@ -1,0 +1,26 @@
+# Copy to configs/esp01s.yml and set the serial port before building.
+# Verify the module has 1 MB flash before flashing this profile.
+name: WiFi-UART
+board:
+  type: esp01s
+  flash_size: 1MB
+  target: []
+upload:
+  method: serial
+  serial:
+    port: /dev/ttyUSB0
+    baud: 460800
+uart:
+  uart_comm:
+    serial: 0
+    baud: 115200
+wifi:
+  hostname: wi-se
+http:
+  port: 80
+  auth:
+    enable: false
+ota:
+  enable: false
+debug:
+  enable: false

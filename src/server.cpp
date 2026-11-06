@@ -14,6 +14,9 @@
 #include "html.h"
 #include "server.h"
 #include "debug.h"
+#if BOARD_TYPE == BOARD_ESP01S
+#include "wifi_setup.h"
+#endif
 
 String toString(const IPAddress &address) {
     return String() + address[0] + "." + address[1] + "." + address[2] + "." + address[3];
@@ -31,8 +34,10 @@ void WiSeServer::begin() {
     // Handle regular HTTP requests.
     httpd->on("/", HTTP_GET, handleIndex);
     httpd->on("/index.html", HTTP_GET, handleIndex);
-    httpd->on("/token", HTTP_GET,
-              std::bind(&WiSeServer::handleToken, this, std::placeholders::_1));
+#if BOARD_TYPE == BOARD_ESP01S
+    wifiSetupRoutes(httpd);
+#endif
+    httpd->on("/token", HTTP_GET, [this](AsyncWebServerRequest *request) { handleToken(request); });
     httpd->on("/stty", HTTP_GET | HTTP_POST,
               std::bind(&WiSeServer::handleSttyRequest, this, std::placeholders::_1),
               nullptr,
@@ -45,7 +50,7 @@ void WiSeServer::begin() {
               std::bind(&WiSeServer::handleGpioBody, this, std::placeholders::_1, std::placeholders::_2,
                         std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 #endif
-    httpd->on("/stats", HTTP_GET, std::bind(&WiSeServer::handleStatsRequest, this, std::placeholders::_1));
+    httpd->on("/stats", HTTP_GET, [this](AsyncWebServerRequest *request) { handleStatsRequest(request); });
     httpd->on("/heap", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (!checkHttpBasicAuth(request)) return;
         request->send(200, "text/plain", String(ESP.getFreeHeap()));
@@ -85,11 +90,19 @@ void WiSeServer::begin() {
         health["heapFrag"] = getHeapFragmentation();
 
         JsonObject net = doc.createNestedObject("net");
+#if BOARD_TYPE == BOARD_ESP01S
+        net["wifiMode"] = WiFi.status() == WL_CONNECTED ? "sta" : "softap";
+#else
         net["wifiMode"] = WIFI_MODE == WIFI_STA ? "sta" : "softap";
+#endif
         net["ssid"] = WiFi.SSID();
         net["bssid"] = WiFi.BSSIDstr();
         net["macAddr"] = WiFi.macAddress();
+#if BOARD_TYPE == BOARD_ESP01S
+        net["ip"] = toString(WiFi.status() == WL_CONNECTED ? WiFi.localIP() : WiFi.softAPIP());
+#else
         net["ip"] = toString(WiFi.localIP());
+#endif
         net["netmask"] = toString(WiFi.subnetMask());
         net["gateway"] = toString(WiFi.gatewayIP());
         net["rssi"] = WiFi.RSSI();

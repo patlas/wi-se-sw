@@ -21,6 +21,7 @@
 // - 2: wi-se-opi4-v0.1
 // - 3: wi-se-rewirable-v0.1
 // - 4: generic ESP32 boards
+// - 5: ESP-01S
 #define BOARD_TYPE {{ cfg.BOARD_TYPE }}
 
 // Optional gpio used by ESP32 to probe vcc.

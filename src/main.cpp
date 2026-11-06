@@ -10,6 +10,9 @@
 #include "server.h"
 #include "debug.h"
 #include "ExtendedSerial.h"
+#if BOARD_TYPE == BOARD_ESP01S
+#include "wifi_setup.h"
+#endif
 
 #ifdef ESP8266
     ADC_MODE(ADC_VCC);
@@ -26,6 +29,7 @@ WiSeServer *server;
 bool otaRunning = false;
 
 void blinkError() {
+#if BOARD_TYPE != BOARD_ESP01S
     digitalWrite(LED_WIFI, LOW);
     digitalWrite(LED_STATUS, LOW);
     digitalWrite(LED_RX, LOW);
@@ -36,6 +40,7 @@ void blinkError() {
         digitalWrite(LED_TX, i % 2 != 0);
         delay(200);
     }
+#endif
 }
 
 void setup() {
@@ -63,6 +68,7 @@ void setup() {
 #endif
 
     // Init LEDs.
+#if BOARD_TYPE != BOARD_ESP01S
     pinMode(LED_WIFI, OUTPUT);
     pinMode(LED_STATUS, OUTPUT);
     pinMode(LED_RX, OUTPUT);
@@ -72,8 +78,12 @@ void setup() {
     digitalWrite(LED_RX, LOW);
     digitalWrite(LED_TX, LOW);
     digitalWrite(LED_STATUS, HIGH);
+#endif
 
     // Init Wi-Fi.
+#if BOARD_TYPE == BOARD_ESP01S
+    wifiSetupBegin();
+#else
     WiFi.mode(WIFI_MODE);
     WiFi.hostname(WIFI_HOSTNAME);
 
@@ -121,6 +131,7 @@ void setup() {
     // analogWrite(LED_WIFI, 40);
     digitalWrite(LED_WIFI, HIGH); // too bright
     digitalWrite(LED_STATUS, LOW);
+#endif
 
     // Set-up Arduino OTA
     // TODO: actually do it
@@ -130,9 +141,11 @@ void setup() {
     httpd->begin();
     debugf("HTTP server is up\r\n");
 
+#if BOARD_TYPE != BOARD_ESP01S
     MDNS.begin(WIFI_HOSTNAME);
+#endif
 
-#if OTA_ENABLE == 1
+#if OTA_ENABLE == 1 && BOARD_TYPE != BOARD_ESP01S
     if (OTA_PASSWORD[0] != '\0') {
         ArduinoOTA.setPassword(OTA_PASSWORD);
         ArduinoOTA.setRebootOnSuccess(true);
@@ -240,7 +253,9 @@ void setup() {
     }
 
 #endif
+#if BOARD_TYPE != BOARD_ESP01S
     MDNS.addService("http", "tcp", 80);
+#endif
 }
 
 void loop() {
@@ -249,10 +264,14 @@ void loop() {
         return yield();
     }
 
+#if BOARD_TYPE == BOARD_ESP01S
+    wifiSetupLoop();
+#else
     if (WIFI_MODE == WIFI_STA && WiFi.status() != WL_CONNECTED) {
         blinkError();
         ESP.restart();
     }
+#endif
 
     ttyd->dispatchUart();
     yield();

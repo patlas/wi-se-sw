@@ -10,6 +10,7 @@
 #define BOARD_WI_SE_OPI4_V01 2
 #define BOARD_WI_SE_REWIRABLE_V01 3
 #define BOARD_ESP32DEV 4
+#define BOARD_ESP01S 5
 
 #if BOARD_TYPE == BOARD_WI_SE_REWIRABLE_V01
 #define LED_WIFI 5
@@ -39,6 +40,8 @@
 #define BOARD_NAME "Wi-Se Rewirable v0.1"
 #elif BOARD_TYPE == BOARD_ESP32DEV
 #define BOARD_NAME "Generic ESP32 board"
+#elif BOARD_TYPE == BOARD_ESP01S
+#define BOARD_NAME "ESP-01S"
 #else
 #define BOARD_NAME "Unknown"
 #endif

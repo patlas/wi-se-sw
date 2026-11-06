@@ -10,6 +10,8 @@
     <% } %>
 </head>
 <body>
+<a id="wifi-config-link" href="/wifi" style="display:none;position:fixed;right:6em;top:.4em;z-index:9999;color:#9cf;background:#222;padding:.3em">Wi-Fi</a>
+<script>fetch('/wifi/status').then(function(r){if(r.ok)document.getElementById('wifi-config-link').style.display='block'}).catch(function(){});</script>
 <% for (const js in htmlWebpackPlugin.files.js) { %>
 <script inline type="text/javascript" src="<%= htmlWebpackPlugin.files.js[js] %>"></script>
 <% } %>
